@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="مشي وهرولة">
+<meta name="theme-color" content="#ffffff">
+<title>مؤقّت المشي والهرولة</title>
+<style>
+  :root{
+    --ink:#000;
+    --paper:#fff;
+    --soft:#f2f2f2;
+    --roundbg:#FFF4D2;
+    --walk:#86E39A;
+    --jog:#FFB21E;
+    --run:#FF8F80;
+    --rest:#9CCBFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--paper);color:var(--ink);
+    font-family:-apple-system,"SF Arabic","Geeza Pro",system-ui,"Segoe UI",Tahoma,sans-serif;
+    -webkit-text-size-adjust:100%;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-user-select:none;user-select:none;
+  }
+  button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+  button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+  .num{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate;display:inline-block}
+
+  .screen{
+    display:none;flex-direction:column;
+    min-height:100vh;min-height:100dvh;
+    padding:
+      calc(env(safe-area-inset-top) + 16px)
+      calc(env(safe-area-inset-right) + 16px)
+      calc(env(safe-area-inset-bottom) + 16px)
+      calc(env(safe-area-inset-left) + 16px);
+  }
+  .screen.active{display:flex}
+
+  /* ---------- الشاشة الأولى: بناء الحصة ---------- */
+  h1{font-size:1.6rem;font-weight:800;margin:4px 0 12px}
+  #builder{display:flex;flex-direction:column;gap:8px}
+  .flow{text-align:center;font-size:1.3rem;font-weight:800;line-height:1}
+
+  .sec{border:2px solid var(--ink);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .sec.round{border-width:4px;background:var(--roundbg)}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .sec-h h2{font-size:1.3rem;font-weight:800}
+  .sec-h small{display:block;font-size:.95rem;font-weight:600;margin-top:2px}
+  .empty{font-size:1rem;font-weight:700;padding:6px 2px}
+
+  .step{border:2px solid var(--ink);border-radius:14px;background:var(--paper);padding:8px;display:flex;flex-direction:column;gap:8px}
+  .step-top{display:flex;align-items:center;gap:6px}
+  .type{
+    flex:1;min-width:0;min-height:48px;display:flex;align-items:center;gap:10px;
+    border:0;background:none;font-size:1.3rem;font-weight:800;text-align:start;
+  }
+  .sw{flex:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--ink)}
+  .type .chg{font-size:1rem;font-weight:800}
+  .ic{
+    flex:none;width:48px;height:48px;border:2px solid var(--ink);border-radius:12px;
+    background:var(--paper);font-size:1.3rem;font-weight:800;line-height:1;
+  }
+  .ic:active{background:var(--ink);color:var(--paper)}
+  .ic:disabled{opacity:.2}
+
+  .stepper{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .stepper button{
+    width:56px;height:56px;border:3px solid var(--ink);border-radius:16px;
+    background:var(--paper);font-size:2rem;font-weight:700;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .stepper button:active{background:var(--ink);color:var(--paper)}
+  .stepper button:disabled{opacity:.25}
+  .val{min-width:72px;text-align:center}
+  .val .num{font-size:1.9rem;font-weight:800;line-height:1}
+  .val small{display:block;font-size:.85rem;font-weight:600;margin-top:2px}
+  .sec-h .stepper button{width:52px;height:52px}
+
+  .add{
+    min-height:54px;border:2px dashed var(--ink);border-radius:14px;background:transparent;
+    font-size:1.15rem;font-weight:800;
+  }
+  .add:active{background:var(--ink);color:var(--paper)}
+  .toggle{
+    display:flex;align-items:center;gap:10px;text-align:start;min-height:54px;
+    border:0;background:none;font-size:1rem;font-weight:700;line-height:1.35;
+  }
+  .toggle .box{
+    flex:none;width:30px;height:30px;border:3px solid var(--ink);border-radius:8px;
+    display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;background:var(--paper);
+  }
+  .toggle[aria-pressed="false"] .box{color:transparent}
+
+  .total{margin:14px 0 6px;padding:14px 16px;border:3px solid var(--ink);border-radius:18px;display:flex;flex-direction:column;gap:10px}
+  .total-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .total-row span:first-child{font-size:1.1rem;font-weight:700}
+  .total b{font-size:1.8rem;font-weight:800}
+  .total b .num{font-size:2.2rem}
+  .tl{display:flex;height:24px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:var(--paper)}
+  .tl i{display:block;height:100%;border-inline-start:1px solid var(--ink)}
+  .tl i:first-child{border-inline-start:0}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.95rem;font-weight:700}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend .sw{width:16px;height:16px;border-radius:4px}
+
+  .startbar{
+    position:sticky;bottom:0;margin-top:auto;
+    padding:10px 0 calc(env(safe-area-inset-bottom, 0px) + 6px);background:var(--paper);
+  }
+  .hint{font-size:1rem;font-weight:700;text-align:center;margin-bottom:8px}
+  .hint.lock{font-size:.9rem;font-weight:600}
+  .primary{
+    width:100%;min-height:76px;border:0;border-radius:20px;
+    background:var(--ink);color:var(--paper);font-size:1.7rem;font-weight:800;
+  }
+  .primary:active{opacity:.8}
+  .primary:disabled{opacity:.3}
+
+  /* ---------- الشاشة الثانية: أثناء التمرين ---------- */
+  #workout{height:100vh;height:100dvh;overflow:hidden;background:var(--walk)}
+  #workout[data-kind="jog"]{background:var(--jog)}
+  #workout[data-kind="run"]{background:var(--run)}
+  #workout[data-kind="rest"]{background:var(--rest)}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .chip{
+    min-height:48px;padding:0 16px;border:3px solid var(--ink);border-radius:14px;
+    background:var(--paper);font-size:1.05rem;font-weight:700;
+  }
+  .round{font-size:1.35rem;font-weight:800}
+  .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px}
+  .phase{font-size:clamp(2.4rem,12vw,3.6rem);font-weight:800;line-height:1.15}
+  .timer{font-size:clamp(5rem,27vw,12rem);font-weight:800;line-height:1;letter-spacing:-.02em}
+  .paused{
+    font-size:1.3rem;font-weight:800;padding:4px 14px;border:3px solid var(--ink);border-radius:12px;
+    visibility:hidden;
+  }
+  .is-paused .paused{visibility:visible}
+  .is-paused .timer{opacity:.45}
+  .next{font-size:1.3rem;font-weight:700;margin-top:6px}
+
+  .progress{margin:10px 0 14px}
+  .bar{height:16px;border:3px solid var(--ink);border-radius:10px;background:var(--paper);overflow:hidden}
+  .bar div{height:100%;width:0;background:var(--ink)}
+  .ptext{display:flex;justify-content:space-between;font-size:1.05rem;font-weight:700;margin-top:6px}
+
+  .controls{display:flex;flex-direction:column;gap:10px}
+  .controls button{
+    min-height:68px;border:3px solid var(--ink);border-radius:18px;
+    background:var(--paper);font-size:1.4rem;font-weight:800;
+  }
+  .controls button:active{background:var(--ink);color:var(--paper)}
+  .controls .pair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #pauseBtn{min-height:80px;font-size:1.7rem}
+
+  /* ---------- الشاشة الثالثة: الانتهاء ---------- */
+  #done .center h2{font-size:2.6rem;font-weight:800}
+  #done .center p{font-size:1.3rem;font-weight:700}
+
+  /* ---------- النوافذ السفلية ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:20;
+    align-items:flex-end;justify-content:center;
+    padding:16px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  }
+  .overlay.show{display:flex}
+  .sheet{
+    width:100%;max-width:480px;background:var(--paper);border-radius:22px;padding:20px;
+    display:flex;flex-direction:column;gap:10px;text-align:center;
+  }
+  .sheet p{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+  .sheet button{min-height:62px;border-radius:16px;font-size:1.35rem;font-weight:800;border:3px solid var(--ink);background:var(--paper)}
+  .sheet .danger{background:var(--ink);color:var(--paper)}
+  .sheet .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sheet .grid button{min-height:76px;font-size:1.5rem}
+</style>
+</head>
+<body>
+
+<!-- الشاشة الأولى -->
+<section id="setup" class="screen active">
+  <h1>حصة مشي وهرولة</h1>
+  <div id="builder"></div>
+  <div class="total">
+    <div class="total-row">
+      <span>مجموع زمن الحصة</span>
+      <b><span id="totalMin" class="num">0</span> <span id="totalUnit">دقيقة</span></b>
+    </div>
+    <div id="timeline" class="tl" aria-hidden="true"></div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--walk)"></i>مشي</span>
+      <span><i class="sw" style="background:var(--jog)"></i>هرولة</span>
+      <span><i class="sw" style="background:var(--run)"></i>جري</span>
+      <span><i class="sw" style="background:var(--rest)"></i>راحة</span>
+    </div>
+  </div>
+  <div class="startbar">
+    <div id="startHint" class="hint" hidden>أضف خطوة واحدة على الأقل داخل الجولة</div>
+    <div class="hint lock">يعمل مع قفل الشاشة: لكل نوع نغمة مميزة، والكلام يُسمع والشاشة مفتوحة</div>
+    <button id="startBtn" class="primary">ابدأ التمرين</button>
+  </div>
+</section>
+
+<!-- الشاشة الثانية -->
+<section id="workout" class="screen" data-kind="walk">
+  <div class="top">
+    <button id="muteBtn" class="chip">الصوت: يعمل</button>
+    <div id="roundLbl" class="round"></div>
+  </div>
+  <div class="center">
+    <div id="phaseName" class="phase"></div>
+    <div id="timer" class="timer num">00:00</div>
+    <div class="paused">متوقف مؤقتًا</div>
+    <div id="nextLbl" class="next"></div>
+  </div>
+  <div class="progress">
+    <div class="bar"><div id="barFill"></div></div>
+    <div class="ptext">
+      <span>مضى <span id="elapsedTxt" class="num">00:00</span></span>
+      <span>من <span id="totalTxt" class="num">00:00</span></span>
+    </div>
+  </div>
+  <div class="controls">
+    <button id="pauseBtn">إيقاف مؤقت</button>
+    <div class="pair">
+      <button id="skipBtn">تخطي المرحلة</button>
+      <button id="endBtn">إنهاء</button>
+    </div>
+  </div>
+</section>
+
+<!-- الشاشة الثالثة -->
+<section id="done" class="screen">
+  <div class="center">
+    <h2>انتهت الحصة</h2>
+    <p id="doneTxt"></p>
+  </div>
+  <button id="againBtn" class="primary">حصة جديدة</button>
+</section>
+
+<div id="confirm" class="overlay" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <p>إنهاء الحصة الآن؟</p>
+    <button id="confirmYes" class="danger">نعم، إنهاء</button>
+    <button id="confirmNo">متابعة التمرين</button>
+  </div>
+</div>
+
+<div id="typeSheet" class="overlay" role="dialog" aria-modal="true">
+  <div class="sheet">
+    <p id="typeTitle">اختر نوع الخطوة</p>
+    <div class="grid">
+      <button data-type="walk" style="background:var(--walk)">مشي</button>
+      <button data-type="jog" style="background:var(--jog)">هرولة</button>
+      <button data-type="run" style="background:var(--run)">جري</button>
+      <button data-type="rest" style="background:var(--rest)">راحة</button>
+    </div>
+    <button id="typeCancel">إلغاء</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ================= أنواع الخطوات والإعداد ================= */
+  var TYPES = {
+    walk: { ar: "مشي",   en: "Walk", def: 60  },
+    jog:  { ar: "هرولة", en: "Jog",  def: 180 },
+    run:  { ar: "جري",   en: "Run",  def: 60  },
+    rest: { ar: "راحة",  en: "Rest", def: 120 }
+  };
+  var SECS = ["before", "round", "after"];
+  var MAX_STEPS = 12, MIN_D = 30, MAX_D = 3600, MAX_ROUNDS = 30;
+  var STORE_KEY = "walkjog-timer.v2";
+
+  function defaultPlan() {
+    return {
+      before: [{ t: "walk", d: 300 }],
+      round:  [{ t: "jog", d: 180 }, { t: "walk", d: 60 }],
+      rounds: 6,
+      skipLast: true,
+      after:  [{ t: "walk", d: 180 }, { t: "rest", d: 600 }]
+    };
+  }
+
+  var plan = defaultPlan();
+  var muted = false;
+
+  function validSteps(a) {
+    if (!Array.isArray(a) || a.length > MAX_STEPS) return null;
+    for (var i = 0; i < a.length; i++) {
+      var s = a[i];
+      if (!s || !TYPES[s.t] || typeof s.d !== "number" || s.d % 30 !== 0 || s.d < MIN_D || s.d > MAX_D) return null;
+    }
+    return a.map(function (s) { return { t: s.t, d: s.d }; });
+  }
+  function loadSettings() {
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) { saved = null; }
+    if (!saved) return;
+    muted = saved.muted === true;
+    var b = validSteps(saved.before), r = validSteps(saved.round), a = validSteps(saved.after);
+    var n = saved.rounds;
+    if (b && r && a && typeof n === "number" && n % 1 === 0 && n >= 1 && n <= MAX_ROUNDS) {
+      plan = { before: b, round: r, after: a, rounds: n, skipLast: saved.skipLast !== false };
+    }
+  }
+  function saveSettings() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        before: plan.before, round: plan.round, after: plan.after,
+        rounds: plan.rounds, skipLast: plan.skipLast, muted: muted
+      }));
+    } catch (e) { /* التخزين غير متاح: تعمل الصفحة بدونه */ }
+  }
+
+  /* ================= أدوات عرض ================= */
+  function minWord(n) { return (n >= 3 && n <= 10) ? "دقائق" : "دقيقة"; }
+  function roundWord(n) { return (n >= 3 && n <= 10) ? "جولات" : "جولة"; }
+  function durParts(sec) {
+    if (sec % 60 === 0) return { n: String(sec / 60), u: minWord(sec / 60) };
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return { n: m + ":" + (s < 10 ? "0" : "") + s, u: "دقيقة" };
+  }
+  function durText(sec) { var p = durParts(sec); return p.n + " " + p.u; }
+  function fmt(sec) {
+    sec = Math.max(0, Math.ceil(sec - 1e-6));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
+  function stepName(t, sec) {
+    if (t === "walk" && sec === "before") return "إحماء — مشي";
+    if (t === "walk" && sec === "after") return "تهدئة — مشي";
+    return TYPES[t].ar;
+  }
+
+  /* ================= تسلسل الحصة ================= */
+  function lastSkipped(pl) { return pl.skipLast && pl.round.length >= 2; }
+
+  function buildPhases(pl) {
+    var P = [];
+    pl.before.forEach(function (s) { P.push({ t: s.t, d: s.d, sec: "before" }); });
+    for (var r = 1; r <= pl.rounds; r++) {
+      var steps = pl.round.slice();
+      if (r === pl.rounds && lastSkipped(pl)) steps.pop();
+      steps.forEach(function (s) { P.push({ t: s.t, d: s.d, sec: "round", r: r }); });
+    }
+    pl.after.forEach(function (s) { P.push({ t: s.t, d: s.d, sec: "after" }); });
+    var acc = 0;
+    P.forEach(function (p) { p.start = acc; acc += p.d; p.end = acc; });
+    return P;
+  }
+
+  /* ================= الشاشة الأولى: البنّاء ================= */
+  var builder = $("builder");
+
+  function stepHTML(sec, i, s, isFirst, isLast) {
+    var dp = durParts(s.d);
+    var a = ' data-sec="' + sec + '" data-i="' + i + '"';
+    return '' +
+      '<div class="step">' +
+        '<div class="step-top">' +
+          '<button type="button" class="type" data-act="type"' + a + '>' +
+            '<span class="sw" style="background:var(--' + s.t + ')"></span>' +
+            '<span>' + TYPES[s.t].ar + '</span><span class="chg">▾</span>' +
+          '</button>' +
+          '<button type="button" class="ic" data-act="up"' + a + ' aria-label="نقل لأعلى"' + (isFirst ? " disabled" : "") + '>↑</button>' +
+          '<button type="button" class="ic" data-act="down"' + a + ' aria-label="نقل لأسفل"' + (isLast ? " disabled" : "") + '>↓</button>' +
+          '<button type="button" class="ic" data-act="del"' + a + ' aria-label="حذف الخطوة">✕</button>' +
+        '</div>' +
+        '<div class="stepper">' +
+          '<button type="button" data-act="inc"' + a + ' aria-label="زيادة المدة"' + (s.d >= MAX_D ? " disabled" : "") + '>+</button>' +
+          '<div class="val"><span class="num">' + dp.n + '</span><small>' + dp.u + '</small></div>' +
+          '<button type="button" data-act="dec"' + a + ' aria-label="إنقاص المدة"' + (s.d <= MIN_D ? " disabled" : "") + '>−</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function renderSetup() {
+    var html = "";
+    var lastSec = null;
+    for (var k = SECS.length - 1; k >= 0; k--) { if (plan[SECS[k]].length) { lastSec = SECS[k]; break; } }
+    var firstSec = null;
+    for (var j = 0; j < SECS.length; j++) { if (plan[SECS[j]].length) { firstSec = SECS[j]; break; } }
+
+    SECS.forEach(function (sec, si) {
+      var steps = plan[sec];
+      if (si > 0) html += '<div class="flow" aria-hidden="true">↓</div>';
+      html += '<div class="sec ' + (sec === "round" ? "round" : "once") + '">';
+      if (sec === "before") {
+        html += '<div class="sec-h"><div><h2>قبل الجولات</h2><small>مرة واحدة في البداية (خارج الجولة)</small></div></div>';
+      } else if (sec === "round") {
+        html += '<div class="sec-h"><div><h2>الجولة</h2><small>كل ما هنا يتكرر بعدد الجولات</small></div>' +
+          '<div class="stepper">' +
+            '<button type="button" data-act="rinc" aria-label="زيادة عدد الجولات"' + (plan.rounds >= MAX_ROUNDS ? " disabled" : "") + '>+</button>' +
+            '<div class="val"><span class="num">' + plan.rounds + '</span><small>' + roundWord(plan.rounds) + '</small></div>' +
+            '<button type="button" data-act="rdec" aria-label="إنقاص عدد الجولات"' + (plan.rounds <= 1 ? " disabled" : "") + '>−</button>' +
+          '</div></div>';
+      } else {
+        html += '<div class="sec-h"><div><h2>بعد الجولات</h2><small>مرة واحدة في النهاية (خارج الجولة)</small></div></div>';
+      }
+
+      if (!steps.length) {
+        html += '<div class="empty">' + (sec === "round" ? "الجولة فارغة: أضف خطوة واحدة على الأقل" : "لا خطوات هنا") + '</div>';
+      }
+      steps.forEach(function (s, i) {
+        var isFirst = sec === firstSec && i === 0;
+        var isLast = sec === lastSec && i === steps.length - 1;
+        html += stepHTML(sec, i, s, isFirst, isLast);
+      });
+      if (steps.length < MAX_STEPS) {
+        html += '<button type="button" class="add" data-act="add" data-sec="' + sec + '">+ إضافة خطوة ' +
+          (sec === "round" ? "داخل الجولة" : sec === "before" ? "قبل الجولات" : "بعد الجولات") + '</button>';
+      }
+      if (sec === "round" && steps.length >= 2 && plan.rounds >= 1) {
+        var ls = steps[steps.length - 1];
+        html += '<button type="button" class="toggle" data-act="skip" aria-pressed="' + plan.skipLast + '">' +
+          '<span class="box">✓</span><span>في الجولة الأخيرة: تخطَّ آخر خطوة («' + TYPES[ls.t].ar + '») وانتقل مباشرة لما بعد الجولات</span></button>';
+      }
+      html += '</div>';
+    });
+    builder.innerHTML = html;
+
+    // المجموع والشريط الزمني
+    var P = buildPhases(plan);
+    var total = P.length ? P[P.length - 1].end : 0;
+    var tp = durParts(total);
+    $("totalMin").textContent = tp.n;
+    $("totalUnit").textContent = tp.u;
+    $("timeline").innerHTML = P.map(function (p) {
+      return '<i style="flex:' + p.d + ' 0 0;background:var(--' + p.t + ')"></i>';
+    }).join("");
+
+    var ok = plan.round.length > 0;
+    $("startBtn").disabled = !ok;
+    $("startHint").hidden = ok;
+  }
+
+  function moveStep(sec, i, dir) {
+    var si = SECS.indexOf(sec);
+    var arr = plan[sec];
+    var s = arr[i];
+    if (dir < 0) {
+      if (i > 0) { arr[i] = arr[i - 1]; arr[i - 1] = s; return; }
+      // أعلى قسمه: ينتقل لنهاية القسم السابق غير الممتلئ
+      for (var k = si - 1; k >= 0; k--) {
+        if (plan[SECS[k]].length < MAX_STEPS) { arr.splice(i, 1); plan[SECS[k]].push(s); return; }
+      }
+    } else {
+      if (i < arr.length - 1) { arr[i] = arr[i + 1]; arr[i + 1] = s; return; }
+      for (var m = si + 1; m < SECS.length; m++) {
+        if (plan[SECS[m]].length < MAX_STEPS) { arr.splice(i, 1); plan[SECS[m]].unshift(s); return; }
+      }
+    }
+  }
+
+  var sheetCtx = null;
+  function openTypeSheet(ctx) {
+    sheetCtx = ctx;
+    $("typeTitle").textContent = ctx.mode === "add" ? "أضف خطوة" : "غيّر نوع الخطوة";
+    $("typeSheet").classList.add("show");
+  }
+  function closeTypeSheet() { sheetCtx = null; $("typeSheet").classList.remove("show"); }
+
+  builder.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-act]");
+    if (!b || b.disabled) return;
+    var act = b.dataset.act, sec = b.dataset.sec, i = Number(b.dataset.i);
+    var s = sec && plan[sec] ? plan[sec][i] : null;
+    switch (act) {
+      case "inc": s.d = Math.min(MAX_D, s.d + (s.d < 300 ? 30 : 60)); break;
+      case "dec": s.d = Math.max(MIN_D, s.d - (s.d <= 300 ? 30 : 60)); break;
+      case "up": moveStep(sec, i, -1); break;
+      case "down": moveStep(sec, i, 1); break;
+      case "del": plan[sec].splice(i, 1); break;
+      case "rinc": plan.rounds = Math.min(MAX_ROUNDS, plan.rounds + 1); break;
+      case "rdec": plan.rounds = Math.max(1, plan.rounds - 1); break;
+      case "skip": plan.skipLast = !plan.skipLast; break;
+      case "add": openTypeSheet({ mode: "add", sec: sec }); return;
+      case "type": openTypeSheet({ mode: "type", sec: sec, i: i }); return;
+      default: return;
+    }
+    saveSettings();
+    renderSetup();
+  });
+
+  $("typeSheet").addEventListener("click", function (ev) {
+    if (ev.target === $("typeSheet")) { closeTypeSheet(); return; }
+    var b = ev.target.closest("button[data-type]");
+    if (!b || !sheetCtx) return;
+    var t = b.dataset.type;
+    if (sheetCtx.mode === "add") plan[sheetCtx.sec].push({ t: t, d: TYPES[t].def });
+    else plan[sheetCtx.sec][sheetCtx.i].t = t;
+    closeTypeSheet();
+    saveSettings();
+    renderSetup();
+  });
+  $("typeCancel").addEventListener("click", closeTypeSheet);
+
+  /* ================= الصوت ================= */
+  /*
+   * العمل مع قفل الشاشة:
+   * iOS يوقف الجافاسكربت وWeb Audio والكلام عند قفل الشاشة، لكنه يُكمل تشغيل عنصر <audio>
+   * مثل مشغّل الموسيقى. لذلك تُولَّد الحصة كاملة كملف صوتي واحد (WAV في الذاكرة) فيه نغمة sine
+   * مميزة عند بداية كل خطوة، ويُشغَّل من لحظة الضغط على «ابدأ التمرين».
+   * الكلام (Run / Walk ...) يُضاف فوقه فقط حين تكون الشاشة مفتوحة.
+   */
+  var track = new Audio();
+  track.preload = "auto";
+  track.setAttribute("playsinline", "");
+  var trackUrl = null;
+
+  // أنماط النغمات: [التردد، المدة بالثواني]
+  var PATTERNS = {
+    start:  [[660, 0.25]],
+    walk:   [[784, 0.18], [587, 0.24]],              // نازلة: هدّئ
+    jog:    [[587, 0.18], [784, 0.24]],              // صاعدة: انطلق
+    run:    [[587, 0.13], [784, 0.13], [988, 0.2]],  // ثلاث صاعدة سريعة: أسرع
+    rest:   [[440, 0.3], [440, 0.3]],                // منخفضة مكررة: توقف
+    finish: [[523, 0.22], [659, 0.22], [784, 0.3]]
+  };
+
+  function buildTrack(P, total) {
+    var SR = total > 3600 ? 4000 : 8000;               // 8-bit mono: حجم صغير
+    var n = Math.ceil((total + 1.6) * SR);
+    var bytes = new Uint8Array(44 + n);
+    bytes.fill(128, 44);                               // صمت
+    var fade = Math.floor(0.03 * SR);
+
+    function note(at, freq, dur) {
+      var s0 = 44 + Math.floor(at * SR), len = Math.floor(dur * SR), vol = 0.32;
+      for (var k = 0; k < len; k++) {
+        var idx = s0 + k;
+        if (idx >= bytes.length) break;
+        var env = Math.min(1, k / fade, (len - k) / fade);   // fade in/out
+        bytes[idx] = 128 + Math.round(127 * vol * env * Math.sin(2 * Math.PI * freq * k / SR));
+      }
+    }
+    function pattern(at, name) {
+      var t = at;
+      PATTERNS[name].forEach(function (nt) { note(t, nt[0], nt[1]); t += nt[1] + 0.06; });
+    }
+
+    pattern(0.05, "start");
+    if (P[0].t !== "walk") pattern(0.45, P[0].t);
+    for (var i = 1; i < P.length; i++) pattern(P[i].start, P[i].t);
+    pattern(total, "finish");
+
+    var v = new DataView(bytes.buffer);
+    function str(o, s) { for (var j = 0; j < s.length; j++) v.setUint8(o + j, s.charCodeAt(j)); }
+    str(0, "RIFF"); v.setUint32(4, 36 + n, true); str(8, "WAVE");
+    str(12, "fmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, SR, true); v.setUint32(28, SR, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    str(36, "data"); v.setUint32(40, n, true);
+
+    if (trackUrl) URL.revokeObjectURL(trackUrl);
+    trackUrl = URL.createObjectURL(new Blob([bytes], { type: "audio/wav" }));
+    return trackUrl;
+  }
+
+  function seekTrack(sec) {
+    try { track.currentTime = sec; } catch (e) {}
+  }
+  function playTrack() {
+    var p = track.play();
+    if (p && p.catch) p.catch(function () {});
+  }
+
+  function setupMediaSession(total) {
+    if (!("mediaSession" in navigator)) return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({ title: "حصة مشي وهرولة", artist: durText(total) });
+      navigator.mediaSession.setActionHandler("play", function () { if (W && !W.running) togglePause(); });
+      navigator.mediaSession.setActionHandler("pause", function () { if (W && W.running) togglePause(); });
+    } catch (e) {}
+  }
+
+  // إن أوقف النظام الصوت (مكالمة مثلًا) يتوقف المؤقت معه حتى لا يختلفا
+  track.addEventListener("pause", function () {
+    if (W && W.running && !track.ended) togglePause();
+  });
+  track.addEventListener("play", function () {
+    if (W && !W.running) togglePause();
+  });
+
+  var synth = window.speechSynthesis || null;
+  var voice = null;
+  function pickVoice() {
+    if (!synth) return;
+    var vs = synth.getVoices() || [];
+    voice =
+      vs.filter(function (v) { return v.lang === "en-US" && /samantha/i.test(v.name); })[0] ||
+      vs.filter(function (v) { return v.lang === "en-US" || v.lang === "en_US"; })[0] ||
+      vs.filter(function (v) { return /^en/i.test(v.lang); })[0] || null;
+  }
+  if (synth) {
+    pickVoice();
+    if ("onvoiceschanged" in synth) synth.onvoiceschanged = pickVoice;
+  }
+  function unlockSpeech() {
+    if (!synth) return;
+    try {
+      var u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      synth.speak(u);
+    } catch (e) {}
+  }
+  function say(text, delay) {
+    if (!synth) return;
+    setTimeout(function () {
+      if (muted || document.hidden) return;
+      try {
+        if (synth.speaking || synth.pending) synth.cancel();
+        var u = new SpeechSynthesisUtterance(text);
+        u.lang = "en-US";
+        if (voice) u.voice = voice;
+        u.rate = 0.9;
+        u.volume = 0.9;
+        synth.speak(u);
+      } catch (e) {}
+    }, delay || 0);
+  }
+
+  var EN = ["zero","one","two","three","four","five","six","seven","eight","nine","ten",
+            "eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"];
+  function numEn(n) { return n <= 20 ? EN[n] : String(n); }
+  function durEn(sec) {
+    var m = Math.floor(sec / 60), half = sec % 60 !== 0;
+    if (m === 0) return "thirty seconds";
+    if (half) return numEn(m) + " and a half minutes";
+    return numEn(m) + (m === 1 ? " minute" : " minutes");
+  }
+
+  /* ================= منع إطفاء الشاشة ================= */
+  var wakeLock = null;
+  function requestWakeLock() {
+    if (!("wakeLock" in navigator) || !W || wakeLock) return;
+    navigator.wakeLock.request("screen").then(function (lock) {
+      wakeLock = lock;
+      lock.addEventListener("release", function () { wakeLock = null; });
+    }).catch(function () {});
+  }
+  function releaseWakeLock() {
+    if (wakeLock) { wakeLock.release().catch(function () {}); wakeLock = null; }
+  }
+
+  /* ================= التمرين ================= */
+  // الوقت يُحسب دائمًا من الطوابع الزمنية: elapsed = base + (now - t0) أثناء التشغيل
+  var W = null;
+  var timerId = null;
+
+  function elapsed() {
+    return W.base + (W.running ? (Date.now() - W.t0) / 1000 : 0);
+  }
+
+  // النغمات في الملف الصوتي؛ هنا الكلام فقط (حين تكون الشاشة مفتوحة)
+  function cueFor(i) {
+    var p = W.P[i];
+    if (p.sec === "after") {
+      if (p.t === "walk") { say("Walk, " + durEn(p.d), 700); return; }
+      if (p.t === "rest") {
+        var firstRest = true;
+        for (var k = 0; k < i; k++) { if (W.P[k].sec === "after" && W.P[k].t === "rest") firstRest = false; }
+        say(firstRest ? "Well done. Rest." : "Rest", 900);
+        return;
+      }
+    }
+    say(TYPES[p.t].en, 700);
+  }
+
+  function startWorkout() {
+    if (!plan.round.length) return;
+    var P = buildPhases(plan);
+    var total = P[P.length - 1].end;
+
+    // داخل حدث الضغط مباشرة (شرط iOS): تشغيل الملف الصوتي وتفعيل الكلام
+    track.src = buildTrack(P, total);
+    track.muted = muted;
+    playTrack();
+    unlockSpeech();
+    setupMediaSession(total);
+
+    W = { P: P, rounds: plan.rounds, total: total, base: 0, t0: Date.now(), running: true, idx: 0 };
+    if (P[0].t !== "walk") say(TYPES[P[0].t].en, 900); // البداية بغير المشي تُعلَن
+
+    $("workout").classList.remove("is-paused");
+    $("pauseBtn").textContent = "إيقاف مؤقت";
+    $("totalTxt").textContent = fmt(W.total);
+    renderMute();
+    show("workout");
+    requestWakeLock();
+    clearInterval(timerId);
+    timerId = setInterval(tick, 250);
+    tick();
+  }
+
+  function tick() {
+    if (!W) return;
+    var e = elapsed();
+    if (e >= W.total) { finish(); return; }
+    // مزامنة الملف الصوتي مع الساعة إن انحرف
+    if (W.running && !track.paused && track.readyState > 0 && Math.abs(track.currentTime - e) > 1.5) seekTrack(e);
+    var i = 0;
+    while (i < W.P.length - 1 && e >= W.P[i].end) i++;
+    if (i !== W.idx) {
+      W.idx = i;
+      // بعد العودة من الخلفية: لا تنبيهات قديمة، فقط إن كانت المرحلة بدأت للتو
+      if (e - W.P[i].start < 5) cueFor(i);
+    }
+    render(e);
+  }
+
+  function render(e) {
+    var p = W.P[W.idx];
+    var next = W.P[W.idx + 1];
+    $("workout").dataset.kind = p.t;
+    $("phaseName").textContent = stepName(p.t, p.sec);
+    $("timer").textContent = fmt(p.end - e);
+    $("roundLbl").textContent =
+      p.sec === "round" ? "الجولة " + p.r + " من " + W.rounds :
+      p.sec === "before" ? "قبل الجولات" : "بعد الجولات";
+    $("nextLbl").textContent = next
+      ? "التالي: " + stepName(next.t, next.sec) + " · " + durText(next.d)
+      : "التالي: انتهاء الحصة";
+    $("barFill").style.width = Math.min(100, (e / W.total) * 100).toFixed(2) + "%";
+    $("elapsedTxt").textContent = fmt(Math.floor(e));
+  }
+
+  function finish() {
+    var total = W.total;
+    // نغمة الختام في آخر الملف الصوتي؛ إن انتهت الحصة بالتخطي نذهب إليها مباشرة
+    if (Math.abs(track.currentTime - total) > 1.5) { seekTrack(total); playTrack(); }
+    stopWorkout(true);
+    $("doneTxt").textContent = "أحسنت · " + durText(total);
+    show("done");
+  }
+
+  function stopWorkout(keepTrack) {
+    clearInterval(timerId);
+    timerId = null;
+    W = null;
+    if (!keepTrack) track.pause();
+    releaseWakeLock();
+    if (synth) { try { synth.cancel(); } catch (e) {} }
+  }
+
+  function togglePause() {
+    if (!W) return;
+    if (W.running) {
+      W.base = elapsed();
+      W.running = false;
+      track.pause();
+      $("workout").classList.add("is-paused");
+      $("pauseBtn").textContent = "استمرار";
+    } else {
+      W.t0 = Date.now();
+      W.running = true;
+      seekTrack(W.base);
+      playTrack();
+      $("workout").classList.remove("is-paused");
+      $("pauseBtn").textContent = "إيقاف مؤقت";
+    }
+    tick();
+  }
+
+  function skipPhase() {
+    if (!W) return;
+    W.base = W.P[W.idx].end;
+    W.t0 = Date.now();
+    seekTrack(W.base);
+    tick();
+  }
+
+  function renderMute() {
+    $("muteBtn").textContent = muted ? "الصوت: مكتوم" : "الصوت: يعمل";
+  }
+
+  function show(id) {
+    ["setup", "workout", "done"].forEach(function (s) {
+      $(s).classList.toggle("active", s === id);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  /* ================= الأحداث ================= */
+  $("startBtn").addEventListener("click", startWorkout);
+  $("pauseBtn").addEventListener("click", togglePause);
+  $("skipBtn").addEventListener("click", skipPhase);
+  $("endBtn").addEventListener("click", function () { $("confirm").classList.add("show"); });
+  $("confirmNo").addEventListener("click", function () { $("confirm").classList.remove("show"); });
+  $("confirmYes").addEventListener("click", function () {
+    $("confirm").classList.remove("show");
+    stopWorkout();
+    renderSetup();
+    show("setup");
+  });
+  $("againBtn").addEventListener("click", function () { renderSetup(); show("setup"); });
+  $("muteBtn").addEventListener("click", function () {
+    muted = !muted;
+    if (muted && synth) { try { synth.cancel(); } catch (e) {} }
+    track.muted = muted;
+    saveSettings();
+    renderMute();
+  });
+
+  // عند عودة الصفحة: أعد طلب منع الإطفاء وأعد حساب المرحلة من الوقت المنقضي
+  function onReturn() {
+    if (document.visibilityState !== "visible" || !W) return;
+    requestWakeLock();
+    tick();
+  }
+  document.addEventListener("visibilitychange", onReturn);
+  window.addEventListener("pageshow", onReturn);
+  window.addEventListener("focus", onReturn);
+
+  loadSettings();
+  renderSetup();
+})();
+</script>
+</body>
+</html>
